@@ -2,74 +2,119 @@
 <html>
 
 <head>
-  <script src="jquery.js"></script>
-  <script src="data_generator.js"></script>
-  <link rel="stylesheet" media="all" href="css/main.css">
+    <script src="jquery.js"></script>
+    <script src="data_generator.js"></script>
+    <link rel="stylesheet" media="all" href="css/main.css">
 </head>
 
 <body>
-  <script>
-  $(document).ready(function() {
-    var $body = $('body');
-    
+<script>
+
+  var stream = streams.home;
+
+  function getPrettyTime(tweettime) {
+    var timeNow = new Date();
+    var newTimeFormat = '';
+    var diffInSec = Math.floor((timeNow.getTime() - tweettime.getTime()) / 1000);
+    if (diffInSec < 60) {
+      newTimeFormat = diffInSec + ' second(s) ago';
+    } else if (diffInSec < 3600) {
+      newTimeFormat = Math.floor(diffInSec / 60) + ' minute(s) ago';
+    } else if (diffInSec < 86400) {
+      newTimeFormat = Math.floor(diffInSec / 3600) + ' hour(s) ago';
+    } else {
+      newTimeFormat = Math.floor(diffInSec / 86400) + ' day(s) ago';
+    }
+    return newTimeFormat;
+  }
+
+  function setStream(user) {
+    stream = streams.users[user] ? streams.users[user] : streams.home;
+    updateTweets();
+  }
+
+  function updateTweets() {
+    $('.tweetlist').html('');
+    var index = stream.length - 1;
+    while (index >= Math.max(stream.length - 5, 0)) {
+      var tweet = stream[index];
+      var $tweet = $('<li class="tweet"></li>');
+
+      var $username = $('<a class="username" href="#"></a>');
+      $username.text('@' + tweet.user);
+
+      $username.click( function (e) {
+                e.preventDefault();
+                var user = $(e.target).text().substr(1);
+                setStream(user);
+              }
+              // Immediately Invoked Function solution:
+              // (function (user) {
+              //   return function (e) {
+              //     setStream(user);
+              //     e.preventDefault();
+              //   }
+              // })(tweet.user);
+      );
+      $username.appendTo($tweet);
+
+      var $timestamp = $('<span class="timestamp"></span>');
+      $timestamp.text(getPrettyTime(tweet.created_at));
+      $timestamp.appendTo($tweet);
+      $tweet.appendTo($('.tweetlist'));
+
+      var $message = $('<div class="message"></div>');
+      $message.text(tweet.message);
+      $message.appendTo($tweet);
+
+      index -= 1;
+    }
+    $(".tweet:even").addClass("lightbg");
+  }
+
+  function addNewTweet(e) {
+    var username = 'anonymous';
+    var newTweet = {
+      message: $('#newtweet').val(),
+      user: username,
+      created_at: new Date(),
+    };
+
+    streams.users[username] = streams.users[username] || [];
+    addTweet(newTweet);
+    $('#newtweet').val('');
+    updateTweets();
+    e.preventDefault();
+  }
+
+  $(document).ready(function () {
 
     $('#refresh').click(updateTweets);
     $('#reset').click(setStream);
+    $('.submit').click(addNewTweet);
 
-    /*setInterval(updateTweets, 5000);*/
-    
-    var stream = streams.home;
-
-    function setStream(user) {
-      stream = streams.users[user] ? streams.users[user] : streams.home;
-      updateTweets();
-    }
-
-    function updateTweets() {
-      $('.tweetlist').html('');
-      
-      var index = stream.length - 1;
-      while (index >= Math.max(stream.length - 15,0)) {
-        var tweet = stream[index];
-        var $tweet = $('<li class="tweet"></li>');
-
-        var $username = $('<a class="username" href="#"></a>');
-        $username.text('@' + tweet.user);
-        $username.click(function (e) {
-          setStream(tweet.user);
-          e.preventDefault();
-        });
-        $username.appendTo($tweet);
-
-        var $timestamp = $('<span class="timestamp"></span>');
-        $timestamp.text(tweet.created_at.toLocaleTimeString());
-        $timestamp.appendTo($tweet);
-        $tweet.appendTo($('.tweetlist'));
-
-        var $message = $('<div class="message"></div>');
-        $message.text(tweet.message);
-        $message.appendTo($tweet);
-
-        index -= 1;
-      }
-      $(".tweet:even").addClass("lightbg");
-    }
+    //setInterval(updateTweets, 5000);
 
     updateTweets();
 
   });
-  </script>
-  <div id='main'>
-    <div class="header"> 
-      <h1>Latest tweets</h1>
-      <div class="buttons">
-        <button id="refresh">Refresh</button>
-        <button id="reset">Reset</button>
-      </div>
+</script>
+<div id='main'>
+    <div class="header">
+        <h1>Latest tweets</h1>
+        <div class="buttons">
+            <button id="refresh">Refresh</button>
+            <button id="reset">Reset</button>
+        </div>
     </div>
     <ul class="tweetlist">
     </ul>
-  </div>
+    <form>
+        <label for="newtweet">Tweet</label>
+        <input type="text" id="newtweet" name="newtweet" placeholder="Type your tweet">
+        <input type="submit" value="Submit" class="submit">
+    </form>
+</div>
 </body>
 
 </html>
